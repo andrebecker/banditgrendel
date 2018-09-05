@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="de">
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="description" content="" />
+	<meta name="author" content="Andr&ecute; Becker" />
+	<META NAME="ROBOTS" CONTENT="NOINDEX,NOFOLLOW">
+	<title>Bandit Grendel</title>
+	<style>
+		#mapdiv {
+			width: 50vw;
+			height: 50vw;
+			float: left;
+		}
+		
+		#controls {
+			float: left;
+		}
+		
+		table {
+			width: 40vw;
+			height: 40vw;
+		}
+		
+		table td {
+			width: 33.33%;
+		}
+		
+		table td input {
+			width: 100%;
+			height: 100%;
+			font-weight: bold;
+			font-size: 499%;
+		}
+	</style>
+</head>
+<body>
+	<p id="gps">
+		<div id="mapdiv"></div>
+			<script
+			  src="https://code.jquery.com/jquery-1.12.4.min.js"
+			  integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
+			  crossorigin="anonymous"></script>
+			<script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+			<script>
+				$(function() {
+				
+					map = new OpenLayers.Map("mapdiv");
+					map.addLayer(new OpenLayers.Layer.OSM());
+										
+					var latitude = 51.726506;
+					var longitude = 9.983208;
+					
+					var latitudeP2 = 0;
+					var longitudeP2 = 0;
+
+					var lonLat = new OpenLayers.LonLat( longitude, latitude )
+					.transform(
+						new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
+						map.getProjectionObject() // to Spherical Mercator Projection
+					);
+									  
+					var zoom=18;
+
+					var markers = new OpenLayers.Layer.Markers( "Markers" );
+					map.addLayer(markers);
+					
+					var changeableMarker = new OpenLayers.Marker(lonLat);
+					markers.addMarker(changeableMarker);
+					
+						/*var lonLatP2 = new OpenLayers.LonLat( longitudeP2, latitudeP2 )
+						.transform(
+							new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
+							map.getProjectionObject() // to Spherical Mercator Projection
+						);
+						markers.addMarker(lonLatP2);*/
+							
+					map.setCenter (lonLat, zoom);
+
+showSecondPlayer();					
+												
+					$('#upleft').click(function() {
+						latitude += 0.0001;	
+						longitude -= 0.0001;	
+						redrawMap(longitude, latitude, 1);	
+					});
+					$('#left').click(function() {
+						longitude -= 0.0001;	
+						redrawMap(longitude, latitude, 1);	
+					});
+					$('#downleft').click(function() {
+						latitude -= 0.0001;	
+						longitude -= 0.0001;	
+						redrawMap(longitude, latitude, 1);	
+					});
+					$('#up').click(function() {
+						latitude += 0.0001;	
+						redrawMap(longitude, latitude, 1);						
+					});
+					$('#down').click(function() {
+						latitude -= 0.0001;	
+						redrawMap(longitude, latitude, 1);	
+					});
+					$('#upright').click(function() {
+						latitude += 0.0001;	
+						longitude += 0.0001;	
+						redrawMap(longitude, latitude, 1);	
+					});
+					$('#right').click(function() {
+						longitude += 0.0001;	
+						redrawMap(longitude, latitude, 1);	
+					});
+					$('#downright').click(function() {
+						latitude -= 0.0001;	
+						longitude += 0.0001;	
+						redrawMap(longitude, latitude, 1);	
+					});
+					
+					function redrawMap(longitude, latitude, playerid) {
+					
+						if(playerid == 1) {
+						markers.removeMarker(changeableMarker);
+						lonLat = new OpenLayers.LonLat( longitude, latitude )
+						.transform(
+							new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
+							map.getProjectionObject() // to Spherical Mercator Projection
+						);
+										  
+						zoom=18;
+
+						markers = new OpenLayers.Layer.Markers( "Markers" );
+						map.addLayer(markers);
+						
+						changeableMarker = new OpenLayers.Marker(lonLat);
+									
+						markers.addMarker(changeableMarker);
+								
+						map.setCenter (lonLat, zoom);
+						
+						} else {
+								if(latitudeP2 != 0 && longitudeP2 != 0) {
+									lonLatP2 = new OpenLayers.LonLat( longitudeP2, latitudeP2 )
+									.transform(
+										new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
+										map.getProjectionObject() // to Spherical Mercator Projection
+									);
+									changeableMarkerP2 = new OpenLayers.Marker(lonLatP2);
+									markers.addMarker(changeableMarkerP2);
+								}
+						}
+					}
+					
+					function showSecondPlayer() {
+						minusOneSec = navigator.geolocation.getCurrentPosition(
+							function(position){ // Position konnte bestimmt werden
+								latitudeP2 = position.coords.latitude; 
+								longitudeP2 = position.coords.longitude;
+								//var accuracy = position.coords.accuracy+'m';
+								redrawMap(longitude, latitude);	
+							}, 
+							function(){ // Positionsbestimmung gescheitert
+							},{enableHighAccuracy: true}
+						);
+						redrawMap(longitudeP2, latitudeP2, 2);	
+					}
+				
+				});
+				
+				$.ajax({
+    url:
+        'https://www.overpass-api.de/api/interpreter?data=' + 
+        '[out:json][timeout:60];' + 
+        'area["boundary"~"administrative"]["name"~"Berlin"];' + 
+        'node(area)["amenity"~"school"];' + 
+        'out;',
+    dataType: 'json',
+    type: 'GET',
+    async: true,
+    crossDomain: true
+}).done(function() {
+    console.log( "second success" );
+}).fail(function(error) {
+    console.log(error);
+    console.log( "error" );
+}).always(function() {
+    console.log( "complete" );
+});
+
+			</script>
+		<form method="post" action="">
+			<table border="0" id="controls">
+				<tr><td><input type="button" id="upleft" value="&#8598;"></td><td><input type="button" id="up" value="&#8593;"></td><td><input type="button" id="upright" value="&#8599;"></td></tr>
+				<tr><td><input type="button" id="left" value="&#8592;"></td><td></td><td><input type="button" id="right" value="&#8594;"></td></tr>
+				<tr><td><input type="button" id="downleft" value="&#8601;"></td><td><input type="button" id="down" value="&#8595;"></td><td><input type="button" id="downright" value="&#8600;"></td></tr>
+			</table>
+		</form>
+	</p>
+</body>
+</html>
